@@ -1,12 +1,12 @@
 # CS367-Finance-Management-System
 
 ## Feature ที่เลือก
-## 1.Authentication APIs
+### 1.Authentication APIs
   ชื่อ นายเสฎฐวุฒิ วิจิตรศิลป์ 
 `POST /api/auth/register`
  ` POST /api/auth/login`
 
-## 2.Transaction APIs
+### 2.Transaction APIs
   ชื่อ จันทร์พงศ์ วิทยอรุณธานี 
   `GET /api/transactions`
   `POST /api/transactions`
@@ -15,7 +15,7 @@
   `PUT /api/transactions/{id}`
   `DELETE /api/transactions/{id}`
 
-## 3.Summary APIs
+### 3.Summary APIs
   ชื่อ ธนดล กล่อมใจ
   `GET /api/summary/monthly`
 
