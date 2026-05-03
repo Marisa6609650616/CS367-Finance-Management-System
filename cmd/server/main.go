@@ -27,8 +27,6 @@ func main() {
 			auth.POST("/login", authHandler.Login)
 		}
 
-		// Protected routes — ใช้ JWT Middleware
-		// (transaction + summary routes จะเพิ่มในสัปดาห์ที่ 2-3)
 		protected := v1.Group("/")
 		protected.Use(middleware.AuthMiddleware())
 		{
