@@ -2,8 +2,11 @@ package main
 
 import (
 	"CS367-Finance-Management-System/config"
-	"CS367-Finance-Management-System/pkg/utils"
-	"fmt"
+	"CS367-Finance-Management-System/internal/handlers"
+	"CS367-Finance-Management-System/internal/middleware"
+	"log"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -12,16 +15,32 @@ func main() {
 	db := config.ConnectDB()
 	defer db.Close()
 
-	token, err := utils.GenerateToken(
-		1,
-		"test@email.com",
-		"user",
-	)
+	authHandler := &handlers.AuthHandler{DB: db}
 
-	if err != nil {
-		panic(err)
+	r := gin.Default()
+
+	api := r.Group("/api")
+	{
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/login", authHandler.Login)
+		}
+
+		protected := api.Group("/")
+		protected.Use(middleware.RequireAuth())
+		{
+
+		}
 	}
 
-	fmt.Println("JWT Token:")
-	fmt.Println(token)
+	port := config.GetEnv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Server running → http://localhost:%s", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatal("Server failed:", err)
+	}
 }
