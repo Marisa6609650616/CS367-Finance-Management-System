@@ -15,9 +15,11 @@ func main() {
 	defer db.Close()
 
 	transactionHandler := handlers.NewTransactionHandler(db)
+	summaryHandler := handlers.NewSumaryMonthyHandler(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/transactions", middleware.AuthMiddleware(transactionHandler.CreateTransaction))
+	mux.HandleFunc("GET /api/summary/monthly", middleware.AuthMiddleware(summaryHandler.SummaryMonthly))
 
 	log.Println("🚀 Server running on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
