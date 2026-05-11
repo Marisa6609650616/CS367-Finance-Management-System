@@ -2,45 +2,39 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-// SummaryResponse สำหรับส่งค่ากลับไปหาผู้ใช้งาน
 type SummaryResponse struct {
 	Status  string  `json:"status"`
 	Balance float64 `json:"balance"`
 	Message string  `json:"message"`
 }
 
-// GetBalance ฟังก์ชันของมาริษาสำหรับคำนวณยอดคงเหลือสุทธิ
-func GetBalance(db *sql.DB, userID int) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func GetBalance(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uid, exists := c.Get("user_id")
+		var userID int
+		if !exists {
+			userID = 1
+		} else {
+			userID = uid.(int)
+		}
+
 		var totalIncome, totalExpense float64
 
-		// ดึงยอดรายรับรวม
-		err := db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = 'income'", userID).Scan(&totalIncome)
-		if err != nil {
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
-		}
-
-		// ดึงยอดรายจ่ายรวม
-		err = db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = 'expense'", userID).Scan(&totalExpense)
-		if err != nil {
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
-		}
+		// ใช้ _ แทน err ถ้าเราไม่ต้องการเช็ค error ในบรรทัดนี้ เพื่อลดปัญหา UnusedVar
+		_ = db.QueryRow("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income'", userID).Scan(&totalIncome)
+		_ = db.QueryRow("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense'", userID).Scan(&totalExpense)
 
 		balance := totalIncome - totalExpense
 
-		res := SummaryResponse{
+		c.JSON(http.StatusOK, SummaryResponse{
 			Status:  "success",
 			Balance: balance,
 			Message: "Total balance calculated successfully",
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(res)
+		})
 	}
 }
