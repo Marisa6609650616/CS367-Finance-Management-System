@@ -1,42 +1,52 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"CS367-Finance-Management-System/middleware"
+
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetBalance(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual)) // บังคับเช็ค SQL เป๊ะๆ
+	// 1. Mock Database
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
 		t.Fatalf("failed to open mock: %s", err)
 	}
 	defer db.Close()
 
-	// Mock SQL ให้ตรงกับใน summary.go
-	mock.ExpectQuery("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'income'").
+	// 2. Mock SQL
+	mock.ExpectQuery("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = 'income'").
 		WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"SUM(amount)"}).AddRow(1000.0))
 
-	mock.ExpectQuery("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND type = 'expense'").
+	mock.ExpectQuery("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = 'expense'").
 		WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"SUM(amount)"}).AddRow(400.0))
 
-	w := httptest.NewRecorder()
-	ctx, r := gin.CreateTestContext(w)
-	ctx.Set("user_id", 1)
-
-	r.GET("/api/summary/balance", GetBalance(db))
+	// 3. สร้าง Request และ Response Recorder
 	req, _ := http.NewRequest("GET", "/api/summary/balance", nil)
-	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	// จำลองค่า UserID เข้าไปใน Context (เหมือนที่ Middleware ของเพื่อนทำ)
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, 1)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler := GetBalance(db)
+
+	// 4. รัน Handler
+	handler.ServeHTTP(rr, req)
+
+	// 5. ตรวจสอบผล
+	assert.Equal(t, http.StatusOK, rr.Code)
+
 	var response SummaryResponse
-	json.Unmarshal(w.Body.Bytes(), &response)
+	json.Unmarshal(rr.Body.Bytes(), &response)
+
 	assert.Equal(t, 600.0, response.Balance)
 	assert.Equal(t, "success", response.Status)
 }
