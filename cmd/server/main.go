@@ -1,26 +1,27 @@
-// cmd/server/main.go
 package main
 
 import (
 	"CS367-Finance-Management-System/config"
-	"CS367-Finance-Management-System/handlers"
-	"CS367-Finance-Management-System/middleware"
-	"log"
-	"net/http"
+	"CS367-Finance-Management-System/pkg/utils"
+	"fmt"
 )
 
 func main() {
 	config.LoadEnv()
+
 	db := config.ConnectDB()
 	defer db.Close()
 
-	transactionHandler := handlers.NewTransactionHandler(db)
-	summaryHandler := handlers.NewSumaryMonthyHandler(db)
+	token, err := utils.GenerateToken(
+		1,
+		"test@email.com",
+		"user",
+	)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/transactions", middleware.AuthMiddleware(transactionHandler.CreateTransaction))
-	mux.HandleFunc("GET /api/summary/monthly", middleware.AuthMiddleware(summaryHandler.SummaryMonthly))
+	if err != nil {
+		panic(err)
+	}
 
-	log.Println("🚀 Server running on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	fmt.Println("JWT Token:")
+	fmt.Println(token)
 }

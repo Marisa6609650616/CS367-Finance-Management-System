@@ -2,6 +2,7 @@ package config
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
@@ -11,9 +12,15 @@ import (
 func ConnectDB() *sql.DB {
 	dbPath := GetEnv("DB_PATH")
 
-	db, err := sql.Open("sqlite3", dbPath)
+	dsn := fmt.Sprintf("file:%s?_foreign_keys=on", dbPath)
+
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		log.Fatal("Open DB error:", err)
+	}
+
+	if err := db.Ping(); err != nil {
+		log.Fatal("DB ping failed:", err)
 	}
 
 	RunSchema(db)
