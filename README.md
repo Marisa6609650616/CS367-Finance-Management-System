@@ -31,4 +31,3 @@
 ## การทดสอบ (Testing)
 - Unit Test Coverage: ไม่น้อยกว่า 80%
 - API Testing via Postman Collection
-
