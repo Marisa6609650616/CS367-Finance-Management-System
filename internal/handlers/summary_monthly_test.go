@@ -1,9 +1,7 @@
 package handlers_test
 
 import (
-	"CS367-Finance-Management-System/handlers"
-	"CS367-Finance-Management-System/middleware"
-	"context"
+	"CS367-Finance-Management-System/internal/handlers"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +9,7 @@ import (
 
 	"database/sql"
 
+	"github.com/gin-gonic/gin"
 	_ "modernc.org/sqlite"
 )
 
@@ -54,15 +53,23 @@ func seedTransactions(t *testing.T, db *sql.DB, rows []map[string]interface{}) {
 	}
 }
 
-// makeRequest builds a request with userID injected into context (mimics AuthMiddleware)
-func makeRequest(userID int, month string) *http.Request {
+// makeGinContext builds a gin.Context with userID set and optional ?month= query param
+func makeGinContext(userID int, month string) (*gin.Context, *httptest.ResponseRecorder) {
+	gin.SetMode(gin.TestMode)
+
+	rr := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rr)
+
 	url := "/api/summary/monthly"
 	if month != "" {
 		url += "?month=" + month
 	}
-	req := httptest.NewRequest(http.MethodGet, url, nil)
-	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
-	return req.WithContext(ctx)
+	c.Request = httptest.NewRequest(http.MethodGet, url, nil)
+
+	// inject userID the same way AuthMiddleware does: c.Set("userID", userID)
+	c.Set("userID", userID)
+
+	return c, rr
 }
 
 // --- Tests ---
@@ -78,8 +85,8 @@ func TestSummaryMonthly_BasicIncomeAndExpense(t *testing.T) {
 	})
 
 	h := handlers.NewSumaryMonthyHandler(db)
-	rr := httptest.NewRecorder()
-	h.SummaryMonthly(rr, makeRequest(1, "2025-04"))
+	c, rr := makeGinContext(1, "2025-04")
+	h.SummaryMonthly(c)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", rr.Code)
@@ -106,12 +113,16 @@ func TestSummaryMonthly_OnlySeesOwnTransactions(t *testing.T) {
 
 	seedTransactions(t, db, []map[string]interface{}{
 		{"user_id": 1, "category_id": 1, "type": "income", "amount": 10000.0, "note": "", "date": "2025-04-01"},
-		{"user_id": 2, "category_id": 1, "type": "income", "amount": 99999.0, "note": "", "date": "2025-04-01"}, // คนอื่น
+		{"user_id": 2, "category_id": 1, "type": "income", "amount": 99999.0, "note": "", "date": "2025-04-01"}, // other user
 	})
 
 	h := handlers.NewSumaryMonthyHandler(db)
-	rr := httptest.NewRecorder()
-	h.SummaryMonthly(rr, makeRequest(1, "2025-04"))
+	c, rr := makeGinContext(1, "2025-04")
+	h.SummaryMonthly(c)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
 
 	var resp map[string]interface{}
 	json.NewDecoder(rr.Body).Decode(&resp)
@@ -126,10 +137,9 @@ func TestSummaryMonthly_NoTransactionsReturnsZero(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	// ไม่มีข้อมูลเลย
 	h := handlers.NewSumaryMonthyHandler(db)
-	rr := httptest.NewRecorder()
-	h.SummaryMonthly(rr, makeRequest(1, "2025-04"))
+	c, rr := makeGinContext(1, "2025-04")
+	h.SummaryMonthly(c)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", rr.Code)
@@ -155,14 +165,18 @@ func TestSummaryMonthly_FiltersByMonthCorrectly(t *testing.T) {
 	defer db.Close()
 
 	seedTransactions(t, db, []map[string]interface{}{
-		{"user_id": 1, "category_id": 1, "type": "income", "amount": 5000.0, "note": "", "date": "2025-03-31"},  // เดือนก่อน
-		{"user_id": 1, "category_id": 1, "type": "income", "amount": 20000.0, "note": "", "date": "2025-04-01"}, // เดือนนี้
-		{"user_id": 1, "category_id": 1, "type": "income", "amount": 8000.0, "note": "", "date": "2025-05-01"},  // เดือนหน้า
+		{"user_id": 1, "category_id": 1, "type": "income", "amount": 5000.0, "note": "", "date": "2025-03-31"},  // prev month
+		{"user_id": 1, "category_id": 1, "type": "income", "amount": 20000.0, "note": "", "date": "2025-04-01"}, // this month
+		{"user_id": 1, "category_id": 1, "type": "income", "amount": 8000.0, "note": "", "date": "2025-05-01"},  // next month
 	})
 
 	h := handlers.NewSumaryMonthyHandler(db)
-	rr := httptest.NewRecorder()
-	h.SummaryMonthly(rr, makeRequest(1, "2025-04"))
+	c, rr := makeGinContext(1, "2025-04")
+	h.SummaryMonthly(c)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
 
 	var resp map[string]interface{}
 	json.NewDecoder(rr.Body).Decode(&resp)
@@ -177,12 +191,14 @@ func TestSummaryMonthly_Unauthorized(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	h := handlers.NewSumaryMonthyHandler(db)
+	gin.SetMode(gin.TestMode)
 	rr := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rr)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/summary/monthly?month=2025-04", nil)
+	// ไม่ Set("userID") — จำลอง request ที่ไม่ผ่าน auth
 
-	// ไม่ inject userID เข้า context
-	req := httptest.NewRequest(http.MethodGet, "/api/summary/monthly?month=2025-04", nil)
-	h.SummaryMonthly(rr, req)
+	h := handlers.NewSumaryMonthyHandler(db)
+	h.SummaryMonthly(c)
 
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401, got %d", rr.Code)

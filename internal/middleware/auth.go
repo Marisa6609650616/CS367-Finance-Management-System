@@ -1,63 +1,33 @@
 package middleware
 
 import (
-	"CS367-Finance-Management-System/config"
+	"CS367-Finance-Management-System/pkg/utils"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
-// AuthMiddleware ตรวจสอบ JWT Token จาก Header: Authorization: Bearer <token>
-// เสฎฐวุฒิจะเป็นคนออก Token จาก POST /api/auth/login
-func AuthMiddleware() gin.HandlerFunc {
+func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Access denied. No token provided.",
-			})
+		header := c.GetHeader("Authorization")
+		if !strings.HasPrefix(header, "Bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token"})
 			return
 		}
 
-		// ต้องขึ้นต้นด้วย "Bearer "
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Invalid token format. Use: Bearer <token>",
-			})
+		tokenStr := strings.TrimPrefix(header, "Bearer ")
+		claims, err := utils.ParseToken(tokenStr)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}
 
-		tokenStr := parts[1]
-		secret := config.GetEnv("JWT_SECRET")
+		userIDFloat, _ := claims["user_id"].(float64)
+		c.Set("user_id", int(userIDFloat))
+		c.Set("email", claims["email"])
+		c.Set("role", claims["role"])
 
-		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return []byte(secret), nil
-		})
-
-		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Invalid or expired token.",
-			})
-			return
-		}
-
-		// ดึง user_id จาก claims แล้วเก็บไว้ใน context
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "Invalid token claims.",
-			})
-			return
-		}
-
-		userID := int(claims["user_id"].(float64))
-		c.Set("userID", userID)
 		c.Next()
 	}
 }
