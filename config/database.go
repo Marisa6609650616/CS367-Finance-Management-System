@@ -5,13 +5,13 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func ConnectDB() *sql.DB {
 	dbPath := GetEnv("DB_PATH")
 
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatal("Open DB error:", err)
 	}
