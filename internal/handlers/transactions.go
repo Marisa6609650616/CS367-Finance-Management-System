@@ -1,11 +1,11 @@
-// handlers/transactions.go
+// internal/handlers/transactions.go
 package handlers
 
 import (
-	"CS367-Finance-Management-System/middleware"
 	"database/sql"
-	"encoding/json"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type TransactionRequest struct {
@@ -24,36 +24,29 @@ func NewTransactionHandler(db *sql.DB) *TransactionHandler {
 	return &TransactionHandler{DB: db}
 }
 
-func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
+func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	// รับค่า user_id จาก middleware
-	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
-	if !ok {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Unauthorized"})
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
+	userID := userIDVal.(int)
 
 	// Parse request body
 	var req TransactionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "รูปแบบข้อมูลไม่ถูกต้อง"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "รูปแบบข้อมูลไม่ถูกต้อง"})
 		return
 	}
 
 	// Validate
 	if req.CategoryID == 0 || req.Type == "" || req.Amount <= 0 || req.Date == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "กรุณากรอกข้อมูลให้ครบ (category_id, type, amount, date)"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "กรุณากรอกข้อมูลให้ครบ (category_id, type, amount, date)"})
 		return
 	}
 	if req.Type != "income" && req.Type != "expense" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "type ต้องเป็น income หรือ expense เท่านั้น"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "type ต้องเป็น income หรือ expense เท่านั้น"})
 		return
 	}
 
@@ -61,9 +54,7 @@ func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Re
 	var count int
 	err := h.DB.QueryRow("SELECT COUNT(*) FROM categories WHERE id = ?", req.CategoryID).Scan(&count)
 	if err != nil || count == 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{"message": "ไม่พบหมวดหมู่นี้"})
+		c.JSON(http.StatusNotFound, gin.H{"message": "ไม่พบหมวดหมู่นี้"})
 		return
 	}
 
@@ -73,19 +64,15 @@ func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Re
 		userID, req.CategoryID, req.Type, req.Amount, req.Note, req.Date,
 	)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "เกิดข้อผิดพลาดในการบันทึกข้อมูล"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "เกิดข้อผิดพลาดในการบันทึกข้อมูล"})
 		return
 	}
 
 	id, _ := result.LastInsertId()
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusCreated, gin.H{
 		"message": "เพิ่มรายการสำเร็จ",
-		"transaction": map[string]interface{}{
+		"transaction": gin.H{
 			"id":          id,
 			"user_id":     userID,
 			"category_id": req.CategoryID,
