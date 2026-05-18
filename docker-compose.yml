@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    container_name: cs367-finance-api
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_PATH=./finance.db
+      - JWT_SECRET=secret_for_dev
+    restart: unless-stopped

@@ -16,6 +16,8 @@ func main() {
 	defer db.Close()
 
 	authHandler := &handlers.AuthHandler{DB: db}
+	// transactionHandler := handlers.NewTransactionHandler(db)
+	summaryHandler := handlers.NewSumaryMonthyHandler(db)
 
 	r := gin.Default()
 
@@ -30,7 +32,10 @@ func main() {
 		protected := api.Group("/")
 		protected.Use(middleware.RequireAuth())
 		{
-
+			// protected.POST("/api/transactions", transactionHandler.CreateTransaction)
+			protected.PUT("/api/transactions/:id", handlers.UpdateTransaction)
+			protected.DELETE("/api/transactions/:id", handlers.DeleteTransaction)
+			protected.POST("/api/summary/monthly", summaryHandler.SummaryMonthly)
 		}
 	}
 

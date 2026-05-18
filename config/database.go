@@ -2,25 +2,18 @@ package config
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func ConnectDB() *sql.DB {
 	dbPath := GetEnv("DB_PATH")
 
-	dsn := fmt.Sprintf("file:%s?_foreign_keys=on", dbPath)
-
-	db, err := sql.Open("sqlite3", dsn)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatal("Open DB error:", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		log.Fatal("DB ping failed:", err)
 	}
 
 	RunSchema(db)
