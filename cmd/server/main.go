@@ -1,4 +1,3 @@
-// cmd/server/main.go
 package main
 
 import (
@@ -15,26 +14,37 @@ func main() {
 	db := config.ConnectDB()
 	defer db.Close()
 
+	// inject DB สำหรับ handler ที่ใช้ global var
+	handlers.DB = db
+
 	authHandler := &handlers.AuthHandler{DB: db}
 	transactionHandler := handlers.NewTransactionHandler(db)
-	summaryHandler := handlers.NewSumaryMonthyHandler(db)
-	handlers.DB = db // สำหรับ UpdateTransaction และ DeleteTransaction
+	summaryMonthlyHandler := handlers.NewSumaryMonthyHandler(db)
+	balanceHandler := handlers.NewBalanceHandler(db)
 
 	r := gin.Default()
+
 	api := r.Group("/api")
 	{
+		// Public routes — ไม่ต้อง login
 		auth := api.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 		}
+
+		// Protected routes — ต้องมี JWT token
 		protected := api.Group("/")
 		protected.Use(middleware.RequireAuth())
 		{
+			// Transaction APIs (จันทร์พงศ์ + นัทธ์ชนัน)
 			protected.POST("/transactions", transactionHandler.CreateTransaction)
 			protected.PUT("/transactions/:id", handlers.UpdateTransaction)
 			protected.DELETE("/transactions/:id", handlers.DeleteTransaction)
-			protected.POST("/summary/monthly", summaryHandler.SummaryMonthly)
+
+			// Summary APIs (ธนดล + มาริษา)
+			protected.GET("/summary/monthly", summaryMonthlyHandler.SummaryMonthly)
+			protected.GET("/summary/balance", balanceHandler.GetBalance)
 		}
 	}
 

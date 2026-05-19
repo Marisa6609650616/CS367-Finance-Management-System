@@ -16,7 +16,12 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		tokenStr := strings.TrimPrefix(header, "Bearer ")
+		tokenStr := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+		if tokenStr == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token"})
+			return
+		}
+
 		claims, err := utils.ParseToken(tokenStr)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})

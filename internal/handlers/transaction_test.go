@@ -18,11 +18,13 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
+// setupRouter สร้าง router จำลองพร้อม middleware ที่ inject user_id=1
 func setupRouter(db *sql.DB) *gin.Engine {
 	handlers.DB = db
 	r := gin.New()
+	// จำลอง RequireAuth middleware โดย set "user_id" ให้ตรงกับที่ handler ใช้
 	r.Use(func(c *gin.Context) {
-		c.Set("userID", 1)
+		c.Set("user_id", 1)
 		c.Next()
 	})
 	r.PUT("/api/transactions/:id", handlers.UpdateTransaction)
@@ -38,13 +40,14 @@ func newMock(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
 	return db, mock
 }
 
-// ============================================================
+// ─────────────────────────────────────────
 // PUT /api/transactions/:id
-// ============================================================
+// ─────────────────────────────────────────
 
 func TestUpdateTransaction_Success(t *testing.T) {
 	db, mock := newMock(t)
-	cols := []string{"id", "user_id", "type", "amount", "category", "description", "date", "created_at"}
+	// columns ตรงกับ schema: id, user_id, category_id, type, amount, note, date, created_at, updated_at
+	cols := []string{"id", "user_id", "category_id", "type", "amount", "note", "date", "created_at", "updated_at"}
 
 	mock.ExpectQuery("SELECT user_id").
 		WillReturnRows(sqlmock.NewRows([]string{"user_id"}).AddRow(1))
@@ -52,7 +55,7 @@ func TestUpdateTransaction_Success(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectQuery("SELECT").
 		WillReturnRows(sqlmock.NewRows(cols).
-			AddRow(1, 1, "expense", 150.0, "อาหาร", "", "2025-05-01", "2025-05-01"))
+			AddRow(1, 1, 1, "expense", 150.0, "ข้าวกลางวัน", "2026-05-01", "2026-05-01", "2026-05-01"))
 
 	body, _ := json.Marshal(map[string]interface{}{"amount": 150.0})
 	w := httptest.NewRecorder()
@@ -62,6 +65,36 @@ func TestUpdateTransaction_Success(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d — body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestUpdateTransaction_MultipleFields(t *testing.T) {
+	// ครอบคลุม branch ของ category_id, note, date ใน dynamic query
+	db, mock := newMock(t)
+	cols := []string{"id", "user_id", "category_id", "type", "amount", "note", "date", "created_at", "updated_at"}
+
+	mock.ExpectQuery("SELECT user_id").
+		WillReturnRows(sqlmock.NewRows([]string{"user_id"}).AddRow(1))
+	mock.ExpectExec("UPDATE").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectQuery("SELECT").
+		WillReturnRows(sqlmock.NewRows(cols).
+			AddRow(1, 1, 2, "income", 5000.0, "โบนัส", "2026-05-01", "2026-05-01", "2026-05-01"))
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"category_id": 2,
+		"type":        "income",
+		"amount":      5000.0,
+		"note":        "โบนัส",
+		"date":        "2026-05-01",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/api/transactions/1", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	setupRouter(db).ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 for multi-field update, got %d | %s", w.Code, w.Body.String())
 	}
 }
 
@@ -142,9 +175,9 @@ func TestUpdateTransaction_InvalidID(t *testing.T) {
 	}
 }
 
-// ============================================================
+// ─────────────────────────────────────────
 // DELETE /api/transactions/:id
-// ============================================================
+// ─────────────────────────────────────────
 
 func TestDeleteTransaction_Success(t *testing.T) {
 	db, mock := newMock(t)

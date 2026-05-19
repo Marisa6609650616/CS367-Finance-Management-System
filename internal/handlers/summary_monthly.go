@@ -24,7 +24,7 @@ type SummaryMonthlyResponse struct {
 }
 
 func (h *SummaryMonthyHandler) SummaryMonthly(c *gin.Context) {
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 
 	month := c.Query("month")
 	if month == "" {
