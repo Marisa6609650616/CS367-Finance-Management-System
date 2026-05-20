@@ -1,0 +1,141 @@
+	CS367-Finance-Management-System/cmd/server		coverage: 0.0% of statements
+	CS367-Finance-Management-System/config		coverage: 0.0% of statements
+=== RUN   TestRegister_Success
+--- PASS: TestRegister_Success (0.07s)
+=== RUN   TestRegister_ResponseHasUserObject
+--- PASS: TestRegister_ResponseHasUserObject (0.06s)
+=== RUN   TestRegister_PasswordNotExposedInResponse
+--- PASS: TestRegister_PasswordNotExposedInResponse (0.06s)
+=== RUN   TestRegister_EmailNormalized
+--- PASS: TestRegister_EmailNormalized (0.06s)
+=== RUN   TestRegister_DuplicateEmail
+--- PASS: TestRegister_DuplicateEmail (0.06s)
+=== RUN   TestRegister_MissingFields
+=== RUN   TestRegister_MissingFields/no_email
+=== RUN   TestRegister_MissingFields/no_password
+=== RUN   TestRegister_MissingFields/no_name
+=== RUN   TestRegister_MissingFields/short_password
+=== RUN   TestRegister_MissingFields/invalid_email
+--- PASS: TestRegister_MissingFields (0.00s)
+    --- PASS: TestRegister_MissingFields/no_email (0.00s)
+    --- PASS: TestRegister_MissingFields/no_password (0.00s)
+    --- PASS: TestRegister_MissingFields/no_name (0.00s)
+    --- PASS: TestRegister_MissingFields/short_password (0.00s)
+    --- PASS: TestRegister_MissingFields/invalid_email (0.00s)
+=== RUN   TestLogin_Success
+--- PASS: TestLogin_Success (0.14s)
+=== RUN   TestLogin_WrongPassword
+--- PASS: TestLogin_WrongPassword (0.12s)
+=== RUN   TestLogin_EmailNotFound
+--- PASS: TestLogin_EmailNotFound (0.00s)
+=== RUN   TestLogin_SameErrorMessage
+--- PASS: TestLogin_SameErrorMessage (0.12s)
+=== RUN   TestLogin_MissingFields
+=== RUN   TestLogin_MissingFields/no_email
+=== RUN   TestLogin_MissingFields/no_password
+=== RUN   TestLogin_MissingFields/invalid_email
+--- PASS: TestLogin_MissingFields (0.00s)
+    --- PASS: TestLogin_MissingFields/no_email (0.00s)
+    --- PASS: TestLogin_MissingFields/no_password (0.00s)
+    --- PASS: TestLogin_MissingFields/invalid_email (0.00s)
+=== RUN   TestCreateTransaction_Success
+--- PASS: TestCreateTransaction_Success (0.00s)
+=== RUN   TestCreateTransaction_InvalidType
+--- PASS: TestCreateTransaction_InvalidType (0.00s)
+=== RUN   TestCreateTransaction_MissingFields
+--- PASS: TestCreateTransaction_MissingFields (0.00s)
+=== RUN   TestCreateTransaction_CategoryNotFound
+--- PASS: TestCreateTransaction_CategoryNotFound (0.00s)
+=== RUN   TestCreateTransaction_InvalidJSON
+--- PASS: TestCreateTransaction_InvalidJSON (0.00s)
+=== RUN   TestCreateTransaction_ZeroAmount
+--- PASS: TestCreateTransaction_ZeroAmount (0.00s)
+=== RUN   TestSummaryMonthly_BasicIncomeAndExpense
+--- PASS: TestSummaryMonthly_BasicIncomeAndExpense (0.00s)
+=== RUN   TestSummaryMonthly_OnlySeesOwnTransactions
+--- PASS: TestSummaryMonthly_OnlySeesOwnTransactions (0.00s)
+=== RUN   TestSummaryMonthly_NoTransactionsReturnsZero
+--- PASS: TestSummaryMonthly_NoTransactionsReturnsZero (0.00s)
+=== RUN   TestSummaryMonthly_DefaultMonth
+--- PASS: TestSummaryMonthly_DefaultMonth (0.00s)
+=== RUN   TestSummaryMonthly_FiltersByMonthCorrectly
+--- PASS: TestSummaryMonthly_FiltersByMonthCorrectly (0.00s)
+=== RUN   TestGetBalance_Success
+--- PASS: TestGetBalance_Success (0.00s)
+=== RUN   TestGetBalance_AllExpense
+--- PASS: TestGetBalance_AllExpense (0.00s)
+=== RUN   TestGetBalance_NoTransactions
+--- PASS: TestGetBalance_NoTransactions (0.00s)
+=== RUN   TestUpdateTransaction_Success
+--- PASS: TestUpdateTransaction_Success (0.00s)
+=== RUN   TestUpdateTransaction_MultipleFields
+--- PASS: TestUpdateTransaction_MultipleFields (0.00s)
+=== RUN   TestUpdateTransaction_NoFields
+--- PASS: TestUpdateTransaction_NoFields (0.00s)
+=== RUN   TestUpdateTransaction_NegativeAmount
+--- PASS: TestUpdateTransaction_NegativeAmount (0.00s)
+=== RUN   TestUpdateTransaction_InvalidType
+--- PASS: TestUpdateTransaction_InvalidType (0.00s)
+=== RUN   TestUpdateTransaction_NotFound
+--- PASS: TestUpdateTransaction_NotFound (0.00s)
+=== RUN   TestUpdateTransaction_Forbidden
+--- PASS: TestUpdateTransaction_Forbidden (0.00s)
+=== RUN   TestUpdateTransaction_InvalidID
+--- PASS: TestUpdateTransaction_InvalidID (0.00s)
+=== RUN   TestDeleteTransaction_Success
+--- PASS: TestDeleteTransaction_Success (0.00s)
+=== RUN   TestDeleteTransaction_NotFound
+--- PASS: TestDeleteTransaction_NotFound (0.00s)
+=== RUN   TestDeleteTransaction_AlreadyDeleted
+--- PASS: TestDeleteTransaction_AlreadyDeleted (0.00s)
+=== RUN   TestDeleteTransaction_Forbidden
+--- PASS: TestDeleteTransaction_Forbidden (0.00s)
+=== RUN   TestDeleteTransaction_InvalidID
+--- PASS: TestDeleteTransaction_InvalidID (0.00s)
+PASS
+coverage: 83.0% of statements
+ok  	CS367-Finance-Management-System/internal/handlers	1.558s	coverage: 83.0% of statements
+=== RUN   TestMiddleware_NoAuthHeader
+--- PASS: TestMiddleware_NoAuthHeader (0.00s)
+=== RUN   TestMiddleware_MissingBearerPrefix
+--- PASS: TestMiddleware_MissingBearerPrefix (0.00s)
+=== RUN   TestMiddleware_BearerWithNoToken
+--- PASS: TestMiddleware_BearerWithNoToken (0.00s)
+=== RUN   TestMiddleware_FakeToken
+--- PASS: TestMiddleware_FakeToken (0.00s)
+=== RUN   TestMiddleware_TamperedToken
+--- PASS: TestMiddleware_TamperedToken (0.00s)
+=== RUN   TestMiddleware_WrongSecret
+--- PASS: TestMiddleware_WrongSecret (0.00s)
+=== RUN   TestMiddleware_ValidToken_Passes
+--- PASS: TestMiddleware_ValidToken_Passes (0.00s)
+=== RUN   TestMiddleware_ValidToken_InjectsContext
+--- PASS: TestMiddleware_ValidToken_InjectsContext (0.00s)
+PASS
+coverage: 100.0% of statements
+ok  	CS367-Finance-Management-System/internal/middleware	1.887s	coverage: 100.0% of statements
+	CS367-Finance-Management-System/internal/models		coverage: 0.0% of statements
+?   	CS367-Finance-Management-System/internal/routes	[no test files]
+=== RUN   TestGenerateToken_Success
+--- PASS: TestGenerateToken_Success (0.00s)
+=== RUN   TestGenerateToken_NoSecret
+--- PASS: TestGenerateToken_NoSecret (0.00s)
+=== RUN   TestGenerateToken_ContainsCorrectClaims
+--- PASS: TestGenerateToken_ContainsCorrectClaims (0.00s)
+=== RUN   TestParseToken_ValidToken
+--- PASS: TestParseToken_ValidToken (0.00s)
+=== RUN   TestParseToken_EmptyString
+--- PASS: TestParseToken_EmptyString (0.00s)
+=== RUN   TestParseToken_RandomString
+--- PASS: TestParseToken_RandomString (0.00s)
+=== RUN   TestParseToken_TamperedPayload
+--- PASS: TestParseToken_TamperedPayload (0.00s)
+=== RUN   TestParseToken_WrongAlgorithm
+--- PASS: TestParseToken_WrongAlgorithm (0.00s)
+=== RUN   TestParseToken_ExpiredToken
+--- PASS: TestParseToken_ExpiredToken (0.00s)
+=== RUN   TestParseToken_WrongSecret
+--- PASS: TestParseToken_WrongSecret (0.00s)
+PASS
+coverage: 91.3% of statements
+ok  	CS367-Finance-Management-System/pkg/utils	1.346s	coverage: 91.3% of statements

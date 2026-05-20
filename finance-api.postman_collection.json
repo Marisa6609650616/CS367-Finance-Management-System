@@ -1,0 +1,140 @@
+{
+  "info": {
+    "_postman_id": "ecae9cc7-74dd-4ba7-bdbf-e3b3bcc17af4",
+    "name": "finance-api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "39557487"
+  },
+  "item": [
+    {
+      "name": "register",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"sa@test.com\",\n  \"password\": \"password123\",\n  \"name\": \"Marisa\"\n}",
+          "options": {
+            "raw": {
+              "language": "text"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/auth/register",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"sa@test.com\",\n  \"password\": \"password123\"\n}",
+          "options": {
+            "raw": {
+              "language": "text"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "transactions",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhQHRlc3QuY29tIiwiZXhwIjoxNzc5MjU4MDI4LCJpYXQiOjE3NzkxNzE2MjgsInJvbGUiOiJ1c2VyIiwidXNlcl9pZCI6M30.W2a_k5nceyoGQXFVgqf97bF5gTAOKnVqJVAlR8kOXoI",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": 1,\n  \"type\": \"income\",\n  \"amount\": 5000.0,\n  \"note\": \"เงินเดือน\",\n  \"date\": \"2026-05-18\"\n}",
+          "options": {
+            "raw": {
+              "language": "text"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/transactions",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "transactions"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "summary",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhQHRlc3QuY29tIiwiZXhwIjoxNzc5MjU4MDI4LCJpYXQiOjE3NzkxNzE2MjgsInJvbGUiOiJ1c2VyIiwidXNlcl9pZCI6M30.W2a_k5nceyoGQXFVgqf97bF5gTAOKnVqJVAlR8kOXoI",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/summary/balance",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "summary",
+            "balance"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

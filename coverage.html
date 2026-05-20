@@ -1,0 +1,867 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>server: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">CS367-Finance-Management-System/cmd/server/main.go (0.0%)</option>
+				
+				<option value="file1">CS367-Finance-Management-System/config/config.go (0.0%)</option>
+				
+				<option value="file2">CS367-Finance-Management-System/config/database.go (0.0%)</option>
+				
+				<option value="file3">CS367-Finance-Management-System/internal/handlers/auth.go (75.6%)</option>
+				
+				<option value="file4">CS367-Finance-Management-System/internal/handlers/summary.go (100.0%)</option>
+				
+				<option value="file5">CS367-Finance-Management-System/internal/handlers/summary_monthly.go (85.0%)</option>
+				
+				<option value="file6">CS367-Finance-Management-System/internal/handlers/transaction.go (84.4%)</option>
+				
+				<option value="file7">CS367-Finance-Management-System/internal/handlers/transactions.go (85.2%)</option>
+				
+				<option value="file8">CS367-Finance-Management-System/internal/middleware/auth.go (100.0%)</option>
+				
+				<option value="file9">CS367-Finance-Management-System/internal/models/user.go (0.0%)</option>
+				
+				<option value="file10">CS367-Finance-Management-System/pkg/utils/jwt.go (91.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "CS367-Finance-Management-System/config"
+        "CS367-Finance-Management-System/internal/handlers"
+        "CS367-Finance-Management-System/internal/middleware"
+        "log"
+
+        "github.com/gin-gonic/gin"
+)
+
+func main() <span class="cov0" title="0">{
+        config.LoadEnv()
+        db := config.ConnectDB()
+        defer db.Close()
+
+        // inject DB สำหรับ handler ที่ใช้ global var
+        handlers.DB = db
+
+        authHandler := &amp;handlers.AuthHandler{DB: db}
+        transactionHandler := handlers.NewTransactionHandler(db)
+        summaryMonthlyHandler := handlers.NewSumaryMonthyHandler(db)
+        balanceHandler := handlers.NewBalanceHandler(db)
+
+        r := gin.Default()
+
+        api := r.Group("/api")
+        </span><span class="cov0" title="0">{
+                // Public routes — ไม่ต้อง login
+                auth := api.Group("/auth")
+                </span><span class="cov0" title="0">{
+                        auth.POST("/register", authHandler.Register)
+                        auth.POST("/login", authHandler.Login)
+                }</span>
+
+                // Protected routes — ต้องมี JWT token
+                <span class="cov0" title="0">protected := api.Group("/")
+                protected.Use(middleware.RequireAuth())
+                </span><span class="cov0" title="0">{
+                        // Transaction APIs (จันทร์พงศ์ + นัทธ์ชนัน)
+                        protected.POST("/transactions", transactionHandler.CreateTransaction)
+                        protected.PUT("/transactions/:id", handlers.UpdateTransaction)
+                        protected.DELETE("/transactions/:id", handlers.DeleteTransaction)
+
+                        // Summary APIs (ธนดล + มาริษา)
+                        protected.GET("/summary/monthly", summaryMonthlyHandler.SummaryMonthly)
+                        protected.GET("/summary/balance", balanceHandler.GetBalance)
+                }</span>
+        }
+
+        <span class="cov0" title="0">port := config.GetEnv("PORT")
+        if port == "" </span><span class="cov0" title="0">{
+                port = "8080"
+        }</span>
+        <span class="cov0" title="0">log.Printf("Server running → http://localhost:%s", port)
+        if err := r.Run(":" + port); err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Server failed:", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package config
+
+import (
+        "log"
+        "os"
+
+        "github.com/joho/godotenv"
+)
+
+func LoadEnv() <span class="cov0" title="0">{
+        err := godotenv.Load()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Println(".env not found, using system env")
+        }</span>
+}
+
+func GetEnv(key string) string <span class="cov0" title="0">{
+        return os.Getenv(key)
+}</pre>
+		
+		<pre class="file" id="file2" style="display: none">package config
+
+import (
+        "database/sql"
+        "log"
+        "os"
+
+        _ "modernc.org/sqlite"
+)
+
+func ConnectDB() *sql.DB <span class="cov0" title="0">{
+        dbPath := GetEnv("DB_PATH")
+
+        db, err := sql.Open("sqlite", dbPath)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Open DB error:", err)
+        }</span>
+
+        <span class="cov0" title="0">RunSchema(db)
+
+        log.Println("Database connected")
+        return db</span>
+}
+
+func RunSchema(db *sql.DB) <span class="cov0" title="0">{
+        schema, err := os.ReadFile("migrations/schema.sql")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Read schema error:", err)
+        }</span>
+
+        <span class="cov0" title="0">_, err = db.Exec(string(schema))
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Run schema error:", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Println("Schema loaded")</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handlers
+
+import (
+        "CS367-Finance-Management-System/internal/models"
+        "CS367-Finance-Management-System/pkg/utils"
+        "database/sql"
+        "net/http"
+        "strings"
+
+        "github.com/gin-gonic/gin"
+        "golang.org/x/crypto/bcrypt"
+)
+
+type AuthHandler struct {
+        DB *sql.DB
+}
+
+type registerRequest struct {
+        Email    string `json:"email"    binding:"required,email"`
+        Password string `json:"password" binding:"required,min=8"`
+        Name     string `json:"name"     binding:"required"`
+}
+
+type loginRequest struct {
+        Email    string `json:"email"    binding:"required,email"`
+        Password string `json:"password" binding:"required"`
+}
+
+func (h *AuthHandler) Register(c *gin.Context) <span class="cov8" title="1">{
+        var req registerRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">email := strings.ToLower(strings.TrimSpace(req.Email))
+
+        existing, err := models.GetUserByEmail(h.DB, email)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+                return
+        }</span>
+        <span class="cov8" title="1">if existing != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">user, err := models.CreateUser(h.DB, email, string(hashed), strings.TrimSpace(req.Name))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, gin.H{
+                "message": "registered successfully",
+                "user":    user,
+        })</span>
+}
+
+func (h *AuthHandler) Login(c *gin.Context) <span class="cov8" title="1">{
+        var req loginRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">email := strings.ToLower(strings.TrimSpace(req.Email))
+
+        user, err := models.GetUserByEmail(h.DB, email)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if user == nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">token, err := utils.GenerateToken(user.ID, user.Email, user.Role)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
+                "message": "login successful",
+                "token":   token,
+                "user":    user,
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package handlers
+
+import (
+        "database/sql"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+type BalanceHandler struct {
+        DB *sql.DB
+}
+
+func NewBalanceHandler(db *sql.DB) *BalanceHandler <span class="cov8" title="1">{
+        return &amp;BalanceHandler{DB: db}
+}</span>
+
+// GET /api/summary/balance
+// คืนยอดคงเหลือสุทธิ = รายรับรวม - รายจ่ายรวม ของ user ที่ login อยู่
+func (h *BalanceHandler) GetBalance(c *gin.Context) <span class="cov8" title="1">{
+        userID := c.GetInt("user_id")
+
+        var totalIncome, totalExpense float64
+
+        _ = h.DB.QueryRow(
+                "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = 'income'",
+                userID,
+        ).Scan(&amp;totalIncome)
+
+        _ = h.DB.QueryRow(
+                "SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = ? AND type = 'expense'",
+                userID,
+        ).Scan(&amp;totalExpense)
+
+        c.JSON(http.StatusOK, gin.H{
+                "status":  "success",
+                "balance": totalIncome - totalExpense,
+                "income":  totalIncome,
+                "expense": totalExpense,
+        })
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package handlers
+
+import (
+        "database/sql"
+        "net/http"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+type SummaryMonthyHandler struct {
+        DB *sql.DB
+}
+
+func NewSumaryMonthyHandler(db *sql.DB) *SummaryMonthyHandler <span class="cov8" title="1">{
+        return &amp;SummaryMonthyHandler{DB: db}
+}</span>
+
+type SummaryMonthlyResponse struct {
+        Month   string  `json:"month"`
+        Income  float64 `json:"income"`
+        Expense float64 `json:"expense"`
+        Balance float64 `json:"balance"`
+}
+
+func (h *SummaryMonthyHandler) SummaryMonthly(c *gin.Context) <span class="cov8" title="1">{
+        userID := c.GetInt("user_id")
+
+        month := c.Query("month")
+        if month == "" </span><span class="cov8" title="1">{
+                month = time.Now().Format("2006-01")
+        }</span>
+
+        <span class="cov8" title="1">rows, err := h.DB.Query(`
+                SELECT type, SUM(amount)
+                FROM transactions
+                WHERE user_id = ?
+                  AND strftime('%Y-%m', date) = ?
+                GROUP BY type
+        `, userID, month)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error."})
+                return
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var income, expense float64
+        for rows.Next() </span><span class="cov8" title="1">{
+                var txType string
+                var total float64
+                if err := rows.Scan(&amp;txType, &amp;total); err != nil </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">switch txType </span>{
+                case "income":<span class="cov8" title="1">
+                        income = total</span>
+                case "expense":<span class="cov8" title="1">
+                        expense = total</span>
+                }
+        }
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
+                "message": "Summary retrieved successfully.",
+                "summary": SummaryMonthlyResponse{
+                        Month:   month,
+                        Income:  income,
+                        Expense: expense,
+                        Balance: income - expense,
+                },
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package handlers
+
+import (
+        "CS367-Finance-Management-System/internal/models"
+        "database/sql"
+        "fmt"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/gin-gonic/gin"
+)
+
+// DB inject จาก main.go สำหรับ UpdateTransaction และ DeleteTransaction
+var DB *sql.DB
+
+// PUT /api/transactions/:id
+func UpdateTransaction(c *gin.Context) <span class="cov8" title="1">{
+        // ดึง user_id จาก context ที่ RequireAuth() inject ไว้
+        userID := c.GetInt("user_id")
+
+        id, err := strconv.Atoi(c.Param("id"))
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid transaction ID."})
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req models.UpdateTransactionRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request body."})
+                return
+        }</span>
+
+        // ต้องส่งมาอย่างน้อย 1 field
+        <span class="cov8" title="1">if req.Type == nil &amp;&amp; req.Amount == nil &amp;&amp; req.CategoryID == nil &amp;&amp;
+                req.Note == nil &amp;&amp; req.Date == nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "No fields to update provided."})
+                return
+        }</span>
+
+        // Validate amount
+        <span class="cov8" title="1">if req.Amount != nil &amp;&amp; *req.Amount &lt;= 0 </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "Amount must be a positive number."})
+                return
+        }</span>
+
+        // Validate type
+        <span class="cov8" title="1">if req.Type != nil &amp;&amp; *req.Type != "income" &amp;&amp; *req.Type != "expense" </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "Type must be income or expense."})
+                return
+        }</span>
+
+        // ตรวจว่า transaction มีอยู่จริง
+        <span class="cov8" title="1">var ownerID int
+        err = DB.QueryRow("SELECT user_id FROM transactions WHERE id = ?", id).Scan(&amp;ownerID)
+        if err == sql.ErrNoRows </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"message": "Transaction not found."})
+                return
+        }</span>
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error."})
+                return
+        }</span>
+
+        // ตรวจว่าเป็นเจ้าของ
+        <span class="cov8" title="1">if ownerID != userID </span><span class="cov8" title="1">{
+                c.JSON(http.StatusForbidden, gin.H{"message": "Forbidden. You can only edit your own transactions."})
+                return
+        }</span>
+
+        // สร้าง dynamic UPDATE query ตาม schema: category_id, type, amount, note, date
+        <span class="cov8" title="1">setClauses := []string{"updated_at = datetime('now')"}
+        args := []interface{}{}
+
+        if req.Type != nil </span><span class="cov8" title="1">{
+                setClauses = append(setClauses, "type = ?")
+                args = append(args, *req.Type)
+        }</span>
+        <span class="cov8" title="1">if req.Amount != nil </span><span class="cov8" title="1">{
+                setClauses = append(setClauses, "amount = ?")
+                args = append(args, *req.Amount)
+        }</span>
+        <span class="cov8" title="1">if req.CategoryID != nil </span><span class="cov8" title="1">{
+                setClauses = append(setClauses, "category_id = ?")
+                args = append(args, *req.CategoryID)
+        }</span>
+        <span class="cov8" title="1">if req.Note != nil </span><span class="cov8" title="1">{
+                setClauses = append(setClauses, "note = ?")
+                args = append(args, *req.Note)
+        }</span>
+        <span class="cov8" title="1">if req.Date != nil </span><span class="cov8" title="1">{
+                setClauses = append(setClauses, "date = ?")
+                args = append(args, *req.Date)
+        }</span>
+
+        <span class="cov8" title="1">args = append(args, id)
+        query := fmt.Sprintf("UPDATE transactions SET %s WHERE id = ?", strings.Join(setClauses, ", "))
+
+        if _, err := DB.Exec(query, args...); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error."})
+                return
+        }</span>
+
+        // ดึงข้อมูลที่อัปเดตแล้วกลับมา
+        <span class="cov8" title="1">var t models.Transaction
+        err = DB.QueryRow(
+                `SELECT id, user_id, category_id, type, amount, note, date, created_at, updated_at
+                 FROM transactions WHERE id = ?`, id,
+        ).Scan(&amp;t.ID, &amp;t.UserID, &amp;t.CategoryID, &amp;t.Type, &amp;t.Amount, &amp;t.Note, &amp;t.Date, &amp;t.CreatedAt, &amp;t.UpdatedAt)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error."})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{
+                "message": "Transaction updated successfully.",
+                "data":    t,
+        })</span>
+}
+
+// DELETE /api/transactions/:id
+func DeleteTransaction(c *gin.Context) <span class="cov8" title="1">{
+        // ดึง user_id จาก context ที่ RequireAuth() inject ไว้
+        userID := c.GetInt("user_id")
+
+        id, err := strconv.Atoi(c.Param("id"))
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid transaction ID."})
+                return
+        }</span>
+
+        // ตรวจว่า transaction มีอยู่จริง
+        <span class="cov8" title="1">var ownerID int
+        err = DB.QueryRow("SELECT user_id FROM transactions WHERE id = ?", id).Scan(&amp;ownerID)
+        if err == sql.ErrNoRows </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"message": "Transaction not found."})
+                return
+        }</span>
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error."})
+                return
+        }</span>
+
+        // ตรวจว่าเป็นเจ้าของ
+        <span class="cov8" title="1">if ownerID != userID </span><span class="cov8" title="1">{
+                c.JSON(http.StatusForbidden, gin.H{"message": "Forbidden. You can only delete your own transactions."})
+                return
+        }</span>
+
+        <span class="cov8" title="1">if _, err := DB.Exec("DELETE FROM transactions WHERE id = ?", id); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error."})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, gin.H{"message": "Transaction deleted successfully."})</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// internal/handlers/transactions.go
+package handlers
+
+import (
+        "database/sql"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+type TransactionRequest struct {
+        CategoryID int     `json:"category_id"`
+        Type       string  `json:"type"`
+        Amount     float64 `json:"amount"`
+        Note       string  `json:"note"`
+        Date       string  `json:"date"`
+}
+
+type TransactionHandler struct {
+        DB *sql.DB
+}
+
+func NewTransactionHandler(db *sql.DB) *TransactionHandler <span class="cov8" title="1">{
+        return &amp;TransactionHandler{DB: db}
+}</span>
+
+func (h *TransactionHandler) CreateTransaction(c *gin.Context) <span class="cov8" title="1">{
+        // รับค่า user_id จาก middleware
+        userIDVal, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+                return
+        }</span>
+        <span class="cov8" title="1">userID := userIDVal.(int)
+
+        // Parse request body
+        var req TransactionRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "รูปแบบข้อมูลไม่ถูกต้อง"})
+                return
+        }</span>
+
+        // Validate
+        <span class="cov8" title="1">if req.CategoryID == 0 || req.Type == "" || req.Amount &lt;= 0 || req.Date == "" </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "กรุณากรอกข้อมูลให้ครบ (category_id, type, amount, date)"})
+                return
+        }</span>
+        <span class="cov8" title="1">if req.Type != "income" &amp;&amp; req.Type != "expense" </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"message": "type ต้องเป็น income หรือ expense เท่านั้น"})
+                return
+        }</span>
+
+        // เช็คว่า category มีอยู่จริง
+        <span class="cov8" title="1">var count int
+        err := h.DB.QueryRow("SELECT COUNT(*) FROM categories WHERE id = ?", req.CategoryID).Scan(&amp;count)
+        if err != nil || count == 0 </span><span class="cov8" title="1">{
+                c.JSON(http.StatusNotFound, gin.H{"message": "ไม่พบหมวดหมู่นี้"})
+                return
+        }</span>
+
+        // บันทึกลง DB
+        <span class="cov8" title="1">result, err := h.DB.Exec(
+                "INSERT INTO transactions (user_id, category_id, type, amount, note, date) VALUES (?, ?, ?, ?, ?, ?)",
+                userID, req.CategoryID, req.Type, req.Amount, req.Note, req.Date,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"message": "เกิดข้อผิดพลาดในการบันทึกข้อมูล"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">id, _ := result.LastInsertId()
+
+        c.JSON(http.StatusCreated, gin.H{
+                "message": "เพิ่มรายการสำเร็จ",
+                "transaction": gin.H{
+                        "id":          id,
+                        "user_id":     userID,
+                        "category_id": req.CategoryID,
+                        "type":        req.Type,
+                        "amount":      req.Amount,
+                        "note":        req.Note,
+                        "date":        req.Date,
+                },
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package middleware
+
+import (
+        "CS367-Finance-Management-System/pkg/utils"
+        "net/http"
+        "strings"
+
+        "github.com/gin-gonic/gin"
+)
+
+func RequireAuth() gin.HandlerFunc <span class="cov8" title="1">{
+        return func(c *gin.Context) </span><span class="cov8" title="1">{
+                header := c.GetHeader("Authorization")
+                if !strings.HasPrefix(header, "Bearer ") </span><span class="cov8" title="1">{
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token"})
+                        return
+                }</span>
+
+                <span class="cov8" title="1">tokenStr := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+                if tokenStr == "" </span><span class="cov8" title="1">{
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token"})
+                        return
+                }</span>
+
+                <span class="cov8" title="1">claims, err := utils.ParseToken(tokenStr)
+                if err != nil </span><span class="cov8" title="1">{
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+                        return
+                }</span>
+
+                <span class="cov8" title="1">userIDFloat, _ := claims["user_id"].(float64)
+                c.Set("user_id", int(userIDFloat))
+                c.Set("email", claims["email"])
+                c.Set("role", claims["role"])
+
+                c.Next()</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package models
+
+import (
+        "database/sql"
+        "errors"
+)
+
+type User struct {
+        ID        int    `json:"id"`
+        Email     string `json:"email"`
+        Password  string `json:"-"`
+        Name      string `json:"name"`
+        Role      string `json:"role"`
+        CreatedAt string `json:"created_at"`
+        UpdatedAt string `json:"updated_at"`
+}
+
+const userColumns = `id, email, password, name, role, created_at, updated_at`
+
+func scanUser(row *sql.Row) (*User, error) <span class="cov0" title="0">{
+        u := &amp;User{}
+        err := row.Scan(&amp;u.ID, &amp;u.Email, &amp;u.Password, &amp;u.Name, &amp;u.Role, &amp;u.CreatedAt, &amp;u.UpdatedAt)
+        if errors.Is(err, sql.ErrNoRows) </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+        <span class="cov0" title="0">return u, err</span>
+}
+
+func GetUserByEmail(db *sql.DB, email string) (*User, error) <span class="cov0" title="0">{
+        row := db.QueryRow(
+                `SELECT `+userColumns+` FROM users WHERE email = ?`, email,
+        )
+        return scanUser(row)
+}</span>
+
+func GetUserByID(db *sql.DB, id int) (*User, error) <span class="cov0" title="0">{
+        row := db.QueryRow(
+                `SELECT `+userColumns+` FROM users WHERE id = ?`, id,
+        )
+        return scanUser(row)
+}</span>
+
+func CreateUser(db *sql.DB, email, hashedPassword, name string) (*User, error) <span class="cov0" title="0">{
+        result, err := db.Exec(
+                `INSERT INTO users (email, password, name) VALUES (?, ?, ?)`,
+                email, hashedPassword, name,
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">id, err := result.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return GetUserByID(db, int(id))</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package utils
+
+import (
+        "CS367-Finance-Management-System/config"
+        "errors"
+        "time"
+
+        "github.com/golang-jwt/jwt/v5"
+)
+
+func getSecret() ([]byte, error) <span class="cov8" title="1">{
+        secret := config.GetEnv("JWT_SECRET")
+        if secret == "" </span><span class="cov8" title="1">{
+                return nil, errors.New("JWT_SECRET is not set")
+        }</span>
+        <span class="cov8" title="1">return []byte(secret), nil</span>
+}
+
+func GenerateToken(userID int, email string, role string) (string, error) <span class="cov8" title="1">{
+        secret, err := getSecret()
+        if err != nil </span><span class="cov8" title="1">{
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">claims := jwt.MapClaims{
+                "user_id": userID,
+                "email":   email,
+                "role":    role,
+                "iat":     time.Now().Unix(),
+                "exp":     time.Now().Add(24 * time.Hour).Unix(),
+        }
+
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        return token.SignedString(secret)</span>
+}
+
+func ParseToken(tokenString string) (jwt.MapClaims, error) <span class="cov8" title="1">{
+        secret, err := getSecret()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) </span><span class="cov8" title="1">{
+                if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok </span><span class="cov8" title="1">{
+                        return nil, errors.New("unexpected signing method")
+                }</span>
+                <span class="cov8" title="1">return secret, nil</span>
+        })
+        <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok || !token.Valid </span><span class="cov0" title="0">{
+                return nil, errors.New("invalid token")
+        }</span>
+
+        <span class="cov8" title="1">return claims, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

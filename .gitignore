@@ -1,0 +1,19 @@
+# Environment variables (never commit real secrets)
+.env
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
+# Go build output
+/bin/
+*.exe
+*.out
+
+# macOS metadata
+.DS_Store
+
+# IDE / editor
+.idea/
+.vscode/
